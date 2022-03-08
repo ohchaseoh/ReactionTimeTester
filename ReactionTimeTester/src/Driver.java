@@ -17,34 +17,34 @@ import javax.swing.Timer;
 
 public class Driver extends JPanel implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
 //instantiates ALL OF ZE VARIABLES MWAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHA
-	int corr = 0, iter = 0, choose = 0, numMode = 0;
+	int current_iter = 0, choose = 0, numMode = 0;
 	int screen_width = 900, screen_height = 900;
-	int numIt 		= 20;
-	int diameter 	= 26;
-	int max_vals 	= 200;
-	int cap 		= 999999999;
+	int max_iter 	 = 20;
+	int diameter 	 = 26;
+	int max_vals 	 = 200;
+	int cap 		 = 999999999;
 	
-	long start 		= System.currentTimeMillis();
-	long finish 	= System.currentTimeMillis();
-	long current 	= System.currentTimeMillis();
-	long start2 	= 0;
-	long total 		= 0;
+	long start 		 = System.currentTimeMillis();
+	long finish 	 = System.currentTimeMillis();
+	long current 	 = System.currentTimeMillis();
+	long restart 	 = 0;
+	long total 		 = 0;
 	
 	long countdown;
 	long highScoreDefault 	= cap;
 	long highScoreSingle 	= cap;
 	
-	boolean inTrans1 = false;
-	boolean gameOn = true;
+	boolean inTrans = true;
+	boolean gameOn  = true;
 	
 	String indic 	= "";
 	String bg 		= "gameover.png";
 	String t1 		= "startingin.png";
 	
 	//instantiates all the text and stuff
-	JLabel trans1;
+	JLabel trans;
 	JLabel background;
-	JLabel itDisplay 	= new JLabel("Iteration: " + iter + "/20");
+	JLabel itDisplay 	= new JLabel("Iteration: " + current_iter + "/" + max_iter);
 	JLabel timeHigh 	= new JLabel("Highscore: " + "N/A" + "ms");
 	JLabel timeTaken 	= new JLabel("Time taken:"+ total + "ms");
 	JLabel timeSofar 	= new JLabel("Timer: " + (current - start) + "ms");
@@ -72,67 +72,54 @@ public class Driver extends JPanel implements ActionListener, KeyListener, Mouse
 	Font countdowntext 	= new Font("Courier New", 1, 500);
 	
 	public void update() {
+		
 		current = System.currentTimeMillis(); //sets current to the current time
+		timeSofar.setText("Timer: "+ (current - start) + "ms"); //displays the amount of time elapsed
+		newModeCount.setFont(countdowntext);
 		
-		if(numMode == 1){	//during transition, it will check if it has been 3 seconds, if it is, it starts the real timer
-			if(current - start2 >= 3000){
-				start = System.currentTimeMillis();
-				numMode = 2;
+		if(inTrans == true){ //if its been 3 seconds, it will set the transition scene to invisible
+			
+			//changes text for newModeCount for countdown transition
+			if(current - restart >= 0){ 
+				newModeCount.setText("3");
+				
+				if(current - restart >= 1000){ 
+					newModeCount.setText("2");
+					
+					if(current - restart >= 2000){
+						newModeCount.setText("1");
+						
+						if(current - restart >= 3000){
+							
+							start = System.currentTimeMillis();
+							
+							trans.setVisible(false);
+							inTrans = false;
+							newModeCount.setVisible(false);
+							gameOn = true;
+						}
+					}
+				}
 			}
 		}
 		
-		if(inTrans1 == true){ //if its been 3 seconds, it will set the transition scene to invisible
-			if(current - start2 >= 3000){
-				trans1.setVisible(false);
-				inTrans1 = false;
-				newModeCount.setVisible(false);
-			}
-		}
-		
-		 //0 = green
-		 //1 = orange
-		 //2 = purple
-		 //3 = teal
-
-		if(current - start2 >= 1000){ //during the 3 seconds it counts down
-			newModeCount.setText("2");
-			if(current - start2 >= 2000){
-				newModeCount.setFont(countdowntext);
-				newModeCount.setText("1");
-			}
-		}
-		
-		timeSofar.setText("Timer: "+(current-start)+"ms"); //displays the amount of time elapsed
-		if(gameOn == true){
-			if(iter == numIt){
+		if (gameOn == true){ //checks if the game is currently being run
+			
+			if (numMode == 0) max_iter = 20;
+			if (numMode == 1) max_iter = 1;
+			
+			if(current_iter == max_iter){ //game finished condition
 				finish = System.currentTimeMillis();
 				total = finish - start;
 				gameOn = false;
 				timeTaken.setText("Time taken: "+ total +" ms"); //updates the time taken 60 times a second
+				setHighScore();
+				
 				timeTaken.setVisible(true);
 				background.setVisible(true);
 
 			}
 			
-		}else if(gameOn == false){ //sets the high (technically low score) by checking if your score is lower than all previous recorded scores.
-				if(numMode == 0){
-					numIt = 30;
-					if(total < highScoreDefault){ //stores high score for normal mode
-						highScoreDefault = total;
-						timeHigh.setText("Highscore: " + highScoreDefault + "ms"); //officially updates high score
-					}
-					
-				}
-				if (numMode == 1 || numMode == 2){ //makes sure that the high score for this gamemode does not carry over to the second game mode
-					numIt = 1;
-					if(total < highScoreSingle){ //stores high score for reaction time mode
-						highScoreSingle = total;
-						timeHigh.setText("Highscore: " + highScoreSingle + "ms"); //officially updates high score
-					}
-				}
-		}
-		
-		if(gameOn == true){ 
 			//this mess checks if the x and y values for ANY of the buttons overlap at any point and moves the buttons to avoid overlap 
 			//It prioritizes moving green, then orange, then purple. Teal will not move.
 			if(((GreenB[0].getLX() <= OrangeB[0].getLX() + diameter) && ((GreenB[0].getLX() + diameter) >= OrangeB[0].getLX())) || ((GreenB[0].getLY() <= (OrangeB[0].getLY() + diameter)) && ((GreenB[0].getLY() + diameter) >= OrangeB[0].getLY()))){								
@@ -159,52 +146,38 @@ public class Driver extends JPanel implements ActionListener, KeyListener, Mouse
 				PurpleB[0].setL();
 			}
 			
-			//checks if the invisible boolean in the individual classes is false. 
-			//invisible boolean checks if the button was clicked in that iteration.
-			//if it has been clicked, it moves to the next iteration, where locations are reset
-			//follows this key v
-			 //0 = green
-			 //1 = orange
-			 //2 = purple
-			 //3 = teal
-			
-			if ((GreenB[0].getVis() == false && choose == 0) || (OrangeB[0].getVis() == false && choose==1) || (PurpleB[0].getVis() == false && choose==2) || (TealB[0].getVis() == false && choose==3)){
-				
-				corr += 1; 
-				iter +=1;
-				GreenB[0].setVis(); OrangeB[0].setVis(); PurpleB[0].setVis(); TealB[0].setVis();
-				
-				setChoose();
-				GreenB[0].setL(); OrangeB[0].setL(); PurpleB[0].setL(); TealB[0].setL();
-				setDisplay();
-				
-			}
-			
 			//checks choose variable, which is a random number generated from 0-3 
 			//setvis makes sure that only a certain button press is valid 
 			//makes sure that only the correct indicator is shown according to the random choose value
+			
+			//0 = green, 1 = orange, 2 = purple, 3 = teal
+			
 			switch(choose) {
 			
 				//green
 				case 0:
+					if (GreenB[0].getVis() == false) visReset();
 					greenInd[0].setVis2();
 					orangeInd[0].setVis(); purpleInd[0].setVis(); tealInd[0].setVis();
 					break;
 			
 				//orange
 				case 1:
+					if (OrangeB[0].getVis() == false) visReset();
 					orangeInd[0].setVis2();
 					purpleInd[0].setVis(); greenInd[0].setVis(); tealInd[0].setVis();
 					break;
 			
 				//purple
 				case 2:
+					if (PurpleB[0].getVis() == false) visReset();
 					purpleInd[0].setVis2();
 					tealInd[0].setVis(); greenInd[0].setVis(); orangeInd[0].setVis();
 					break;
 				
 				//teal
 				case 3:
+					if (TealB[0].getVis() == false) visReset();
 					tealInd[0].setVis2();
 					greenInd[0].setVis(); orangeInd[0].setVis(); purpleInd[0].setVis();
 					break;
@@ -228,24 +201,55 @@ public class Driver extends JPanel implements ActionListener, KeyListener, Mouse
 	}
 	
 	public int getChoose(){
-		return choose;
+		return this.choose;
 	}
 	
 	public void setChoose(){
 		choose = (int)(Math.random()*4); //determines which button will be the correct one to click
 	}
 	
-	public void setDisplay(){
-		itDisplay.setText("Iteration: " + iter + "/20"); //updates iteration counter
+	public void setIteration(){
+		itDisplay.setText("Iteration: " + current_iter + "/20"); //updates iteration counter
 	}
 	
-	public void setHighScoreNA(){
-		timeHigh.setText("Highscore: " + "N/A" + " ms"); //sets initial highscore
+	public void setHighScore(){
+		//sets the high (technically low score) by checking if your score is lower than all previous recorded scores.
+		if(total < highScoreDefault){ //stores high score for normal mode
+			highScoreDefault = total;
+			timeHigh.setText("Highscore: " + highScoreDefault + "ms"); //officially updates high score
+		}	
 	}
-
-	public void trans1(){
-		trans1.setVisible(false);
+	
+	//method for checking if the invisible boolean in the individual classes is false. 
+	//invisible boolean checks if the button was clicked in that iteration.
+	//if it has been clicked, it moves to the next iteration, where locations are reset
+	
+	public void visReset() {
+		current_iter +=1;
+		GreenB[0].setVis(); OrangeB[0].setVis(); PurpleB[0].setVis(); TealB[0].setVis();
+		
+		setChoose();
+		GreenB[0].setL(); OrangeB[0].setL(); PurpleB[0].setL(); TealB[0].setL();
+		setIteration();
 	}
+	
+	public void keyReset() {
+		
+		current_iter = 0;
+		start = System.currentTimeMillis();
+		restart = System.currentTimeMillis(); //try restart if no worky
+		gameOn = false;
+		inTrans = true; 
+		trans.setVisible(true);
+		background.setVisible(false);
+		timeTaken.setVisible(false);
+		newModeCount.setVisible(true);
+		setIteration();
+		//GreenB[0].setVis3(); OrangeB[0].setVis3(); PurpleB[0].setVis3(); TealB[0].setVis3();
+		
+		update();
+	}
+	
 	
 	public Driver() {
 		
@@ -259,10 +263,10 @@ public class Driver extends JPanel implements ActionListener, KeyListener, Mouse
 		newModeCount.setVisible(false);
 		f.add(newModeCount);
 		
-		trans1 = new JLabel(transit1);
-		trans1.setBounds(0,0,900,900);
-		trans1.setVisible(false);
-		f.add(trans1);
+		trans = new JLabel(transit1);
+		trans.setBounds(0,0,900,900);
+		trans.setVisible(false);
+		f.add(trans);
 		
 		timeTaken.setBounds(0,0,500,100);
 		timeTaken.setForeground(Color.black);
@@ -288,11 +292,6 @@ public class Driver extends JPanel implements ActionListener, KeyListener, Mouse
 		timeSofar.setForeground(Color.black);
 		timeSofar.setVisible(true);
 		f.add(timeSofar);
-		
-		//checks if highscore is valid
-		if ((numMode == 0 || numMode == 1) && (highScoreDefault == cap))  {
-			setHighScoreNA();
-		}
 
 		f.setTitle("APM - Beta");
 		f.setSize(screen_width, screen_height);
@@ -347,50 +346,31 @@ public class Driver extends JPanel implements ActionListener, KeyListener, Mouse
 	Timer t;
 
 	@Override //resets all the variables to its initial value the first time the game is run
-	public void keyPressed(KeyEvent e) { //resets if space is pressed
-		if(e.getKeyCode() == 32){
-			setDisplay();
-			numIt = 20;
-			iter = corr = numMode = 0;
-			start = System.currentTimeMillis();
-			gameOn = true;
-			background.setVisible(false);
-			timeTaken.setVisible(false);
-			GreenB[0].setVis3(); OrangeB[0].setVis3(); PurpleB[0].setVis3(); TealB[0].setVis3();
-			timeHigh.setText("Highscore: " + highScoreDefault + "ms");
-			if((numMode == 0) && (highScoreDefault == cap)){
-				setHighScoreNA();
-				}	
-		}
-		update();
+	public void keyPressed(KeyEvent e) {
 		
 		/*
 		 * Gamemode toggle works by temporarily setting the gamemode tracker integer to 1, before changing it to 2 and changing the number of iterations needed to complete a round to 1.
 		 * Gamemode tracker integer is first set to 1 so the code does not run more than once.
-		 * It sets start2, a millisecond tracker as soon as t is pressed. When the gamemode integer is 1, start2 begins to be updated 60 times a second. The countdown checks how much time has passed and changes it to 3 > 2 > 1 
+		 * It sets restart, a millisecond tracker as soon as t is pressed. When the gamemode integer is 1, restart begins to be updated 60 times a second. The countdown checks how much time has passed and changes it to 3 > 2 > 1 
 		 * depending on the miliseconds passed 
 		 * When T is pressed, the transition scene starts
-		 * When start2 determines that 3 seconds has passed, the transition scene becomes invisible and the actual timer begins
+		 * When restart determines that 3 seconds has passed, the transition scene becomes invisible and the actual timer begins
 		 */
 		
-		if(e.getKeyCode() == 84){ //switches gamemode to reaction time
-			setDisplay();
-			iter = 0;
-			numIt = numMode = 1; 
-			start2 = System.currentTimeMillis(); 
-			gameOn = true;
-			inTrans1 = true; 
-			trans1.setVisible(true);
-			newModeCount.setVisible(true);
-			newModeCount.setText("3");
+		if(e.getKeyCode() == 32){ //resets if space is pressed
 			
-			if((numMode == 1) && (highScoreSingle == cap)){
-				setHighScoreNA();
-			}else{
-				timeHigh.setText("Highscore: " + highScoreSingle + "ms");
-			}
+			numMode = 0;
+			if(highScoreSingle == cap) setHighScore();
+			else timeHigh.setText("Highscore: " + highScoreSingle + "ms");
+			
+			keyReset();
 		}
-		update();
+		
+		if(e.getKeyCode() == 84){ //switches gamemode to reaction time
+			numMode = 1;
+			
+			keyReset();
+		}
 	}
 
 	@Override
@@ -447,5 +427,3 @@ public class Driver extends JPanel implements ActionListener, KeyListener, Mouse
 	}
 
 }
-
-
